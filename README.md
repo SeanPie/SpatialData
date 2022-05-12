@@ -1,5 +1,6 @@
-"""Project Plans: Use Fastqs and Image data to recreate UMAP files outside of 10X programs. (Maybe)"""
+"""Project Plans: Process and analyze mice kidney spatial transcriptomics data"""
 
-Based on project https://www.life-science-alliance.org/content/5/2/e202101246#nogo
+Based on article: https://jasn.asnjournals.org/content/33/2/279
+Spatially Resolved Transcriptomic Analysis of Acute Kidney Injury in a Female Murine Model
 
-Fundamentals of vaping-associated pulmonary injury leading to severe respiratory distress
+Based on Github Procedure: https://lmweber.org/OSTA-book/
