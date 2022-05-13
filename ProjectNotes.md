@@ -1,4 +1,4 @@
-<!-- cd gen811
+cd gen811
 
 #Created a virtual Conda environment for the project:
     conda create -n spatial
@@ -62,6 +62,6 @@ mv 2day_processed Output     #Repeat for each sample
 cd /Output/2day_processed/outs
 
 #Downloaded "cloupe.cloupe" file from outs folder with cyberduck
-#Downloaded Loupe Browser from 10X genomics (https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest#loupe) to view cloupe file  -->
+#Downloaded Loupe Browser from 10X genomics (https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest#loupe) to view cloupe file 
 
 ![](/Users/sean/Documents/GitHub/SpatialData/811_1.png)
