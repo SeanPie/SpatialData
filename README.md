@@ -1,3 +1,6 @@
+Actual project is the ProjectNotes markdown file.
+
+
 """Project Plans: Process and analyze mice kidney spatial transcriptomics data"""
 
 Based on article: https://jasn.asnjournals.org/content/33/2/279
