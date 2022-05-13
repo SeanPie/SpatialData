@@ -42,9 +42,9 @@
     
     wget -O 6week_he.tiff https://www.rebuildingakidney.org/hatrac/resources/gene_expression/processed_images/2021/09/17-E9NY/6wks_110_HE-s0-z0-c0.ome.tif:6WDVGHH36H7FC36HZB34NWLXLU?uinit=1&cid=record #6 weeks tissue sample
 
-    mkdir Spaceranger
-    cd Spaceranger
-    mkdir Output
+    mkdir ../Spaceranger
+    cd ../Spaceranger
+    mkdir Output    #Folder for SpaceRanger output files
 
 #Download and install (unpack) SpaceRanger (1.3.1)
 
