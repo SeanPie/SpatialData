@@ -1,4 +1,5 @@
-cd gen811
+#Try displaying the rendered blob
+    cd gen811
 
 #Created a virtual Conda environment for the project:
     conda create -n spatial
@@ -9,7 +10,7 @@ cd gen811
 
 #Downloaded fastq data from NCBI SRA database using parallel
     parallel wget https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR156548{}/SRR156548{} ::: 44 45 46 47 48
-        #Downloads read data from 5 samples from the paper, 1 control mouse and 4 experimental mice
+#Downloaded read data is from 5 samples from the paper, 1 control mouse and 4 experimental mice
 
 #Make directories for each tissue sample and move each fastq run to the right folder
     mkdir {4hours,12hours,2days,6weeks,sham}
@@ -18,8 +19,8 @@ cd gen811
 #Convert files from SRA data to fastq files
     fastq-dump --split-files /SRR15654844     #For each tissue sample
 
-mkdir Images
-cd Images
+    mkdir Images
+    cd Images
 
 #Downloaded images for kidney tissue for each mouse
     wget -O 2day_he.tiff https://www.rebuildingakidney.org/hatrac/resources/gene_expression/processed_images/2021/09/17-E9NR/2days_158_HE-s0-z0-c0.ome.tif:BMRMW7ONOS6HY2WZAOMLH5NMEM?uinit=1&cid=record #2 days tissue sample
@@ -32,9 +33,9 @@ cd Images
     
     wget -O 6week_he.tiff https://www.rebuildingakidney.org/hatrac/resources/gene_expression/processed_images/2021/09/17-E9NY/6wks_110_HE-s0-z0-c0.ome.tif:6WDVGHH36H7FC36HZB34NWLXLU?uinit=1&cid=record #6 weeks tissue sample
 
-mkdir Spaceranger
-cd Spaceranger
-mkdir Output
+    mkdir Spaceranger
+    cd Spaceranger
+    mkdir Output
 
 #Download and install (unpack) SpaceRanger (1.3.1)
     wget -O spaceranger-1.3.1.tar.gz "https://cf.10xgenomics.com/releases/spatial-exp/spaceranger-1.3.1.tar.gz?Expires=1652485053&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZi4xMHhnZW5vbWljcy5jb20vcmVsZWFzZXMvc3BhdGlhbC1leHAvc3BhY2VyYW5nZXItMS4zLjEudGFyLmd6IiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjUyNDg1MDUzfX19XX0_&Signature=KhWzVM4mRkVp74-2fUYpO2QJzch3OrHG9onZJhOVYjJNHrUluskOQb3zuAe5ZN6d6oYSfJl1u8izmjjCqpvd5-UV8QG1e0fPC416Zd3rVJWk6e4awT0WLvvGbiyi0vZ2BXSJk8UuAjKLhy8jEcDExtHiF1A85OWQA8y~j~fWLFBOKGqrwtjd567GNcoEFV3M32xGkslV17D74~mG0T9gn5VgdYQwBL72Sl1-qIVtbk67JNOOCF08Vknnh3cOXk~RkXYSvTCu1-pQZc6mbRzwblOFDZ4xENu6rV2k5LZI9AN0Nm0LyLOl1xBU9nsYARLIqsw0hKbGJzfId6S5AlZmwQ__&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA"
@@ -54,14 +55,14 @@ mkdir Output
                    --sample=SRR15654844 \ #Sample name from FASTQ filename
                    --image=/gen811/Images/sham_he.tiff \ #Path to brightfield image 
                    --unknown-slide #Default spot positions
-    #Repeat command for each tissue sample
+#Repeated command for each tissue sample
 
 #Move spaceranger output to Spaceranger/Output/
-mv 2day_processed Output     #Repeat for each sample
+    mv 2day_processed Output     #Repeat for each sample
 
-cd /Output/2day_processed/outs
+    cd /Output/2day_processed/outs
 
 #Downloaded "cloupe.cloupe" file from outs folder with cyberduck
 #Downloaded Loupe Browser from 10X genomics (https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest#loupe) to view cloupe file 
 
-![](/Users/sean/Documents/GitHub/SpatialData/811_1.png)
+    ![](/Users/sean/Documents/GitHub/SpatialData/811_1.png)
