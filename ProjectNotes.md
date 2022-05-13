@@ -79,4 +79,4 @@
 #Downloaded "cloupe.cloupe" file from outs folder with cyberduck
 #Downloaded Loupe Browser from 10X genomics (https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest#loupe) to view cloupe file 
 
-    ![](/assets/images/811_1.png)
+    ![](/811_1.png)
