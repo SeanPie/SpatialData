@@ -79,4 +79,11 @@
 #Downloaded "cloupe.cloupe" file from outs folder with cyberduck
 #Downloaded Loupe Browser from 10X genomics (https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest#loupe) to view cloupe file 
 
+#View of the 2days_processed kidney file inside the Loupe Browser with premade clusters based on SpaceRangers analyses
 ![](/811_1.png)
+
+#View of the barcoded spots in the kidney file clustered into a t-SNE plot (Cluster colors should be the same)
+![](/811_T.png)
+
+#View of spots clustered into a UMAP plot
+![](/811_U.png)
