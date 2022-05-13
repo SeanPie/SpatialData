@@ -21,11 +21,11 @@
 #Make directories for each tissue sample and move each fastq run to the right folder
 
     mkdir {4hours,12hours,2days,6weeks,sham}
-    mv SRR15654844 sham     #for each tissue sample 
+    mv SRR15654844 sham     #Repeat for each tissue sample 
 
 #Convert files from SRA data to fastq files
 
-    fastq-dump --split-files /SRR15654844     #For each tissue sample
+    fastq-dump --split-files /SRR15654844     #Repeat for each tissue sample
 
     mkdir Images
     cd Images
