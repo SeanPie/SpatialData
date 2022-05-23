@@ -21,11 +21,11 @@
 #Make directories for each tissue sample and move each fastq run to the right folder
 
     mkdir {4hours,12hours,2days,6weeks,sham}
-    mv SRR15654844 sham     #for each tissue sample 
+    mv SRR15654844 sham     #Repeat for each tissue sample 
 
 #Convert files from SRA data to fastq files
 
-    fastq-dump --split-files /SRR15654844     #For each tissue sample
+    fastq-dump --split-files /SRR15654844     #Repeat for each tissue sample
 
     mkdir Images
     cd Images
@@ -42,9 +42,9 @@
     
     wget -O 6week_he.tiff https://www.rebuildingakidney.org/hatrac/resources/gene_expression/processed_images/2021/09/17-E9NY/6wks_110_HE-s0-z0-c0.ome.tif:6WDVGHH36H7FC36HZB34NWLXLU?uinit=1&cid=record #6 weeks tissue sample
 
-    mkdir Spaceranger
-    cd Spaceranger
-    mkdir Output
+    mkdir ../Spaceranger
+    cd ../Spaceranger
+    mkdir Output    #Folder for SpaceRanger output files
 
 #Download and install (unpack) SpaceRanger (1.3.1)
 
