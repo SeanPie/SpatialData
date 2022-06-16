@@ -1,0 +1,114 @@
+---
+title: "Spatial Experiment"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+Spatial Transcriptomics based on https://lmweber.org/OSTA-book/analysis-steps.html 
+
+For both practice data from github and from mice kidney paper
+
+```{r}
+library(SpatialExperiment)
+library(STexampleData)
+library(ggspavis)
+library(scater)
+
+#load object from sample data
+# spe <- Visium_humanDLPFC()
+# imgData(spe)
+```
+
+
+Load the data and create a Spatial Experiment object
+```{r}
+
+dir <- file.path('test')
+
+
+sample1 <-  file.path(dir,"week", "outs")
+
+spe1 <- read10xVisium(sample1,
+                        type = "sparse", data = "filtered",
+                        images = "lowres", load = FALSE)
+
+sample_ids2 <- c("2day", '12hour')
+samples2 <- file.path(dir, sample_ids2, "outs")
+
+samples_idsAll <- c('2day', '12hour', 'week', 'sham')
+samplesAll <-  file.path(dir, samples_idsAll, 'outs')
+
+#Import visium data for mutiple samples
+# spe2 <- read10xVisium(samples2, sample_ids2,
+#                         type = "sparse", data = "filtered",
+#                         images = "lowres", load = FALSE)
+# 
+# speAll <- read10xVisium(samplesAll, samples_idsAll,
+#                         type = "sparse", data = "filtered",
+#                         images = "lowres", load = FALSE)
+
+```
+
+
+```{r}
+
+plotSpots(spe1)
+# plotSpots(spe2)
+# plotSpots(speAll)
+# plotVisium(speAll)
+plotVisium(spe1)
+```
+
+```{r}
+
+# colData(spe)$sum <- colSums(counts(spe)) # add some values in 'colData' to annotate spots, also done by addPerCellQC function
+# 
+# # spe1 <- spe1[, colData(spe1)$in_tissue == TRUE] #All spots already in tissue because using filtered data
+# 
+# #rowData(spe1)$symbol #Get a list of gene names using rowData, symbol columns is the names
+# 
+# 
+
+is_mito <- grepl("(^MT-)|(^mt-)", rowData(spe1)$symbol) #Used to look for specific genes, in examples searches for mitochondrial genes
+
+# table(is_mito)
+rowData(spe1)$symbol[is_mito]
+
+spe1 <- addPerCellQC(spe1, subsets = list(mito = is_mito))
+head(colData(spe1))
+
+plotVisium(spe1, fill = "sum", trans = "log", highlight = "in_tissue")
+
+
+```
+Thresholds can be used as QC to remove spots that don't meet metrics. Includes among others:
+1. Library size
+2. # of expressed genes
+3. Proportion of gene specific reads (mitochondrial in this example)
+4. # of cells per spot (If available for dataset)
+
+```{r}
+hist(colData(spe1)$sum, breaks = 20) # Library Size, total sum of UMI counts per spot (included in sum column)
+
+hist(colData(spe1)$detected, breaks = 20) # Number of expressed genes per spot (detected column)
+
+hist(colData(spe1)$subsets_mito_percent, breaks = 20) # Proportion of mitochondrial genes per spot
+
+# select QC threshold for library size
+qc_lib_size <- colData(spe1)$sum < 5000
+table(qc_lib_size)
+
+colData(spe1)$qc_lib_size <- qc_lib_size
+
+# check spatial pattern of discarded spots
+plotQC(spe1, type = "spots", 
+       discard = "qc_lib_size")
+
+```
+``` {r}
+
+
+```
+
+
