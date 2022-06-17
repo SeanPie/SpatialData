@@ -5,7 +5,7 @@ output:
     df_print: paged
 ---
 
-Spatial Transcriptomics based on https://lmweber.org/OSTA-book/analysis-steps.html 
+Spatial Transcriptomics analysis based on https://lmweber.org/OSTA-book/analysis-steps.html 
 
 For both practice data from github and from mice kidney paper
 
@@ -74,13 +74,13 @@ plotVisium(spe1)
 
 is_mito <- grepl("(^MT-)|(^mt-)", rowData(spe1)$symbol) #Used to look for specific genes, in examples searches for mitochondrial genes
 
-# table(is_mito)
+table(is_mito)
 rowData(spe1)$symbol[is_mito]
 
 spe1 <- addPerCellQC(spe1, subsets = list(mito = is_mito))
 head(colData(spe1))
 
-plotVisium(spe1, fill = "sum", trans = "log", highlight = "in_tissue")
+# plotVisium(spe1, fill = "sum", trans = "log", highlight = "in_tissue")
 
 
 ```
@@ -193,6 +193,7 @@ plotDimRed(spe1, type = "PCA",
 plotDimRed(spe1, type = "UMAP",
            annotate = "label", palette = "libd_layer_colors")
 ```
+
 Code to identify marker genes, can also be done using Seurat
 
 ``` {r}
