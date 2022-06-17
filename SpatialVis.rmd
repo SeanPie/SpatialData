@@ -1,19 +1,21 @@
 ---
 title: "Spatial Experiment"
 output:
-  html_notebook: default
-  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 Spatial Transcriptomics based on https://lmweber.org/OSTA-book/analysis-steps.html 
 
 For both practice data from github and from mice kidney paper
 
-```{r}
+```{r, include=FALSE} 
 library(SpatialExperiment)
 library(STexampleData)
 library(ggspavis)
 library(scater)
+library(scran)
+library(pheatmap)
 
 #load object from sample data
 # spe <- Visium_humanDLPFC()
@@ -22,24 +24,24 @@ library(scater)
 
 
 Load the data and create a Spatial Experiment object
-```{r}
+```{r, message=FALSE}
 
-dir <- file.path('test')
+dir <- file.path("~","Desktop","test")
 
-
-sample1 <-  file.path(dir,"week", "outs")
+sample1 <-  file.path(dir, "week", "outs")
 
 spe1 <- read10xVisium(sample1,
                         type = "sparse", data = "filtered",
                         images = "lowres", load = FALSE)
 
-sample_ids2 <- c("2day", '12hour')
-samples2 <- file.path(dir, sample_ids2, "outs")
 
-samples_idsAll <- c('2day', '12hour', 'week', 'sham')
-samplesAll <-  file.path(dir, samples_idsAll, 'outs')
-
-#Import visium data for mutiple samples
+# sample_ids2 <- c("2day", '12hour')
+# samples2 <- file.path(dir, sample_ids2, "outs")
+# 
+# samples_idsAll <- c('2day', '12hour', 'week', 'sham')
+# samplesAll <-  file.path(dir, samples_idsAll, 'outs')
+# 
+# #Import visium data for mutiple samples
 # spe2 <- read10xVisium(samples2, sample_ids2,
 #                         type = "sparse", data = "filtered",
 #                         images = "lowres", load = FALSE)
@@ -105,10 +107,108 @@ colData(spe1)$qc_lib_size <- qc_lib_size
 plotQC(spe1, type = "spots", 
        discard = "qc_lib_size")
 
+# # combined set of discarded spots
+# discard <- qc_lib_size | qc_detected | qc_mito | qc_cell_count
+# colData(spe)$discard <- discard
+
+# # filter low-quality spots
+# spe <- spe[, !colData(spe)$discard]
+
 ```
+Log based normalization can be performed to scale data approximately and create clusters.
+Is this necessary for filtered data?
+
+
 ``` {r}
+set.seed(123) #quick clustering for pool-based size factors
+qclus <- quickCluster(spe1)
+# table(qclus)
 
+spe1 <- computeSumFactors(spe1, cluster = qclus)
+summary(sizeFactors(spe1))
+hist(sizeFactors(spe1), breaks = 20)
+
+spe1 <-  logNormCounts(spe1)
+assayNames(spe1)
+```
+Feature selection based on highly variable genes (HVG) and spatially variable genes (SVG).
+Should mitochondrial genes be removed? Are they are likely highly expressed and/or are they of biological interest?
+SVG selection based on SPARK-X package, HVG based on scran package
+
+``` {r}
+# spe1 <- spe1[!is_mito, ]
+# dim(spe1)
+
+deCells <-  modelGeneVar(spe1)
+
+fit <-  metadata(deCells)
+plot(fit$mean, fit$var, 
+     xlab = "mean of log-expression", ylab = "variance of log-expression")
+curve(fit$trend(x), col = "dodgerblue", add = TRUE, lwd = 2)
+
+top_hvgs <- getTopHVGs(deCells, prop = 0.1) #prop defines how many HVGS are wanted, 0.1 returns top 10% of genes
+length(top_hvgs)
+
+```
+PCA and UMAP can be easily produced.
+How do PCA/UMAP plots compare to the plots prpduced by loupe browser for 6week sample?
+  They are different but I think different because they have 8 clusters, Compared to my 6. 
+
+
+```{r}
+set.seed(123)
+spe1 <- runPCA(spe1, subset_row = top_hvgs)
+spe1 <- runUMAP(spe1, dimred = "PCA")
+
+# dim(reducedDim(spe, "PCA"))
+
+colnames(reducedDim(spe1, "UMAP")) <- paste0("UMAP", 1:2)
+
+plotDimRed(spe1, type = "PCA")
+plotDimRed(spe1, type = "UMAP")
 
 ```
 
+Produces clusters of HVGs using graph-based clustering based on the Walktrap method. Applies to top 50 PCs? (Meaning?)
+
+Change K values to get number of clusters less than 8. Are less clusters better or are more clusters more accurate?
+```{r}
+set.seed(123)
+k = 23
+g <- buildSNNGraph(spe1, k = k, use.dimred = "PCA") #Graph based clustering
+g_walk <- igraph::cluster_walktrap(g)
+clus <- g_walk$membership
+table(clus)
+
+colLabels(spe1) <- factor(clus) #Store cluster labels in column 'label' in colData
+
+plotSpots(spe1, annotate = "label",
+          palette = "libd_layer_colors")
+
+plotVisium(spe1, fill = "label", trans = "log", highlight = "in_tissue")
+
+plotDimRed(spe1, type = "PCA",
+           annotate = "label", palette = "libd_layer_colors")
+
+plotDimRed(spe1, type = "UMAP",
+           annotate = "label", palette = "libd_layer_colors")
+```
+Code to identify marker genes, can also be done using Seurat
+
+``` {r}
+rownames(spe1) <- rowData(spe1)$symbol
+
+markers <- findMarkers(spe1, test = 'binom', direction = 'up') #Produces list of clusters equal to clusters from graph based
+markers
+
+interesting <- markers[[6]] #selection for which cluster
+best_set <- interesting[interesting$Top <= 5, ]
+logFCs <- getMarkerEffects(best_set)
+
+pheatmap(logFCs, breaks = seq(-5, 5, length.out = 101))
+
+top_genes <- head(rownames(interesting))
+plotExpression(spe1, x = "label", features = top_genes)
+
+```
 
