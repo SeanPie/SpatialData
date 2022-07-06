@@ -51,7 +51,25 @@ dummy <- FindVariableFeatures(dummy, selection.method = "vst", nfeatures = 2000)
 top10 <-  head(VariableFeatures(dummy), 10)
 
 plot1 <- VariableFeaturePlot(dummy)
-plot2 <- LabelPoints(plot = plot1, points = top10)
-plot1 + plot2
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1
+plot2
 ```
+
+Linear transformation or scaling, standard for dimensionality reduction so that highly expressed genes don't dominate downstream analysis
+
+```{r}
+all.genes <- rownames(dummy)
+#length(all.genes)  -- 16842
+
+dummy <- ScaleData(dummy, features = all.genes)
+
+dummy <- RunPCA(dummy, features = VariableFeatures(object = dummy))
+print(dummy[["pca"]], dims = 1:5,nfeatures = 5)
+VizDimLoadings(dummy, dims = 1:2, reduction = "pca")
+
+DimPlot(dummy, reduction = "pca")
+DimHeatmap(dummy, dims = 1, cells = 500, balanced = TRUE)
+
+
 ```
