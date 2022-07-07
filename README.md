@@ -3,6 +3,7 @@
 Practice data from article: https://jasn.asnjournals.org/content/33/2/279
 Spatially Resolved Transcriptomic Analysis of Acute Kidney Injury in a Female Murine Model
 
+Bash Notes: ProjectNotes.md
 
 In progress HTMLs Notes: 
 
