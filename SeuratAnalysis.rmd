@@ -43,7 +43,7 @@ plot1 + plot2
 Filtering cells with over 6000/under 500 features or >50% mitochondrial DNA?
 Normalizing data by default: normalization.method = "LogNormalize", scale.factor = 10000
 
-``` {r}
+``` {r, warning = FALSE}
 dummy <- subset(dummy, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & percent.mt < 5)
 dummy <- NormalizeData(dummy)
 
@@ -62,7 +62,7 @@ Run PCA on the scaled data based on previously determined variable features. Wha
 
 in DimHeatMap(), cells and features are ordered according to PCA scores. 
 
-```{r}
+```{r, warning = FALSE}
 all.genes <- rownames(dummy)
 #length(all.genes)  -- 16842
 
@@ -82,7 +82,7 @@ To Determine how many PCs to include and which are significant, perform a resamp
 
 Significant PCs are those with low p-value features. Drop off can be seen after PC 8. Elbow in plot ranks where majority of true signal is captured based on location of elbow bend. Recommended to err on the higher side when choosing the parameter. Too little PCs significantly/adveresly alters data.
 
-```{r, dimensionality}
+```{r, dimensionality, warning = FALSE}
 dummy <- JackStraw(dummy, num.replicate = 100)
 dummy <-  ScoreJackStraw(dummy, dims = 1:15)
 
@@ -106,14 +106,17 @@ DimPlot(dummy, reduction = "umap", label = TRUE)
 ```
 
 ``` {r, deq}
-
 # find all markers of cluster 2
 cluster2.markers <- FindMarkers(dummy, ident.1 = 2, min.pct = 0.25)
 head(cluster2.markers, n = 5)
 
-# find all markers distinguishing cluster 5 from clusters 0 and 3
-cluster5.markers <- FindMarkers(dummy, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
-head(cluster5.markers, n = 5)
+#For cluster 0
+cluster0.markers <- FindMarkers(dummy, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+
+# find all markers distinguishing cluster 3 from clusters 0 and 2
+cluster3.markers <- FindMarkers(dummy, ident.1 = 3, ident.2 = c(0, 2), min.pct = 0.25)
+head(cluster3.markers, n = 5)
+
 
 # find markers for every cluster compared to all remaining cells, report only the positive
 # ones
@@ -122,16 +125,14 @@ dummy.markers %>%
     group_by(cluster) %>%
     slice_max(n = 2, order_by = avg_log2FC)
 
-cluster0.markers <- FindMarkers(dummy, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
-
 ```
 
 ``` {r}
-VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+VlnPlot(dummy, features = c(row.names(cluster2.markers)[1], row.names(cluster2.markers)[2]))
 
-# you can plot raw counts as well
-VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
-
-FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP",
-    "CD8A"))
+# # you can plot raw counts as well
+# VlnPlot(dummy, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
+# 
+# FeaturePlot(dummy, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP",
+#     "CD8A"))
 ```
