@@ -3,9 +3,12 @@ Actual project is the ProjectNotes markdown file.
 
 """Project Plans: Process and analyze mice kidney spatial transcriptomics data"""
 
-Based on article: https://jasn.asnjournals.org/content/33/2/279
+Practice data from article: https://jasn.asnjournals.org/content/33/2/279
 Spatially Resolved Transcriptomic Analysis of Acute Kidney Injury in a Female Murine Model
 
-Based on Github Procedure: https://lmweber.org/OSTA-book/
 
-View (in progress) knitted HTML: https://htmlpreview.github.io/?https://github.com/SeanPie/SpatialData/blob/main/SpatialVis.html
+In progress HTMLs Notes: 
+
+OSTA: https://htmlpreview.github.io/?https://github.com/SeanPie/SpatialData/blob/main/SpatialVis.html
+
+Seurat: https://htmlpreview.github.io/?https://github.com/SeanPie/SpatialData/blob/main/SeuratAnalysis.html
