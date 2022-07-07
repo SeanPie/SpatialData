@@ -26,7 +26,7 @@ dummy
 
 In online example, filtering was done on cells with >5% mitochondrial counts, however in test data, Kidneys have been damaged which would lead to increased mitochondrial expression; Different metrics needed?
 
-FeatureScatter anc be used to visualize feature-feature relationships, as well as, metadata comparison. This can be useful for data filtering. Filtering cells with over 6000/under 500 features or >50% mitochondrial DNA?
+FeatureScatter can be used to visualize feature-feature relationships, as well as, metadata comparison. This can be useful for data filtering. Filtering cells with over 6000/under 500 features or >50% mitochondrial DNA?
 
 ```{r}
 dummy[["percent.mt"]] <- PercentageFeatureSet(dummy, pattern = "^mt-") #Calculates the percentage of couns originating from a set of features
@@ -56,7 +56,11 @@ plot1
 plot2
 ```
 
-Linear transformation or scaling, standard for dimensionality reduction so that highly expressed genes don't dominate downstream analysis
+Linear transformation or scaling, standard for dimensionality reduction so that highly expressed genes don't dominate downstream analysis.
+
+Run PCA on the scaled data based on previously determined variable features. What are the possible variable features?
+
+in DimHeatMap(), cells and features are ordered according to PCA scores. 
 
 ```{r}
 all.genes <- rownames(dummy)
@@ -70,6 +74,64 @@ VizDimLoadings(dummy, dims = 1:2, reduction = "pca")
 
 DimPlot(dummy, reduction = "pca")
 DimHeatmap(dummy, dims = 1, cells = 500, balanced = TRUE)
+DimHeatmap(dummy, dims = 1:15, cells = 500, balanced = TRUE)
 
+```
 
+To Determine how many PCs to include and which are significant, perform a resampling test (JackStraw Procedure). Process can take a long time, More approximate technique ElbowPlot() used to save time.
+
+Significant PCs are those with low p-value features. Drop off can be seen after PC 8. Elbow in plot ranks where majority of true signal is captured based on location of elbow bend. Recommended to err on the higher side when choosing the parameter. Too little PCs significantly/adveresly alters data.
+
+```{r, dimensionality}
+dummy <- JackStraw(dummy, num.replicate = 100)
+dummy <-  ScoreJackStraw(dummy, dims = 1:15)
+
+JackStrawPlot(dummy, dims = 1:15)
+ElbowPlot(dummy)
+```
+Clustering based on K-nearest neighbor and optimization using Louvain algorithm. Increasing resolution increases the number of clusters, where more are needed with larger datasets.
+
+``` {r, clustering}
+dummy <- FindNeighbors(dummy, dims = 1:8)
+dummy <-  FindClusters(dummy, resolution = 0.5)
+
+# Look at cluster IDs of the first 5 cells
+head(Idents(dummy), 5)
+```
+
+``` {r, non-linear-redux, message = FALSE, warning = FALSE}
+dummy <- RunUMAP(dummy, dims = 1:8)
+
+DimPlot(dummy, reduction = "umap", label = TRUE)
+```
+
+``` {r, deq}
+
+# find all markers of cluster 2
+cluster2.markers <- FindMarkers(dummy, ident.1 = 2, min.pct = 0.25)
+head(cluster2.markers, n = 5)
+
+# find all markers distinguishing cluster 5 from clusters 0 and 3
+cluster5.markers <- FindMarkers(dummy, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
+head(cluster5.markers, n = 5)
+
+# find markers for every cluster compared to all remaining cells, report only the positive
+# ones
+dummy.markers <- FindAllMarkers(dummy, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+dummy.markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 2, order_by = avg_log2FC)
+
+cluster0.markers <- FindMarkers(dummy, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+
+```
+
+``` {r}
+VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+
+# you can plot raw counts as well
+VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
+
+FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP",
+    "CD8A"))
 ```
