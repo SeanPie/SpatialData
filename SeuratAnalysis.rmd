@@ -31,7 +31,7 @@ dummy2
 ## Merging Two Data Objects
 Can be used to easily compare male and female, dehydrated vs hydrated, etc...
 
-``` {r, unused_example}
+``` {r, unused-example}
 dummy.data <- Read10X(data.dir= "~/Desktop/test/sham/outs/filtered_feature_bc_matrix")
 dummy <- CreateSeuratObject(counts = dummy.data, project = "ShamKidney", min.cells = 3, min.features = 200)
 dummy
@@ -129,6 +129,10 @@ dummy <- RunUMAP(dummy, dims = 1:8)
 DimPlot(dummy, reduction = "umap", label = TRUE)
 ```
 
+## Differential Expression
+
+Positive and negative markers for a single cluster can be selected. Choose cluster with ident.1 argument.
+
 ``` {r, deq}
 # find all markers of cluster 2
 cluster2.markers <- FindMarkers(dummy, ident.1 = 2, min.pct = 0.25)
@@ -150,13 +154,28 @@ dummy.markers %>%
     slice_max(n = 2, order_by = avg_log2FC)
 
 ```
+Voilin plots to try and identify marker genes upregulated in different clusters. I.e. KCNE1 is potassium voltage-gated protein expressed in principal cells, NPHS1 is nephrin protein necessary for proper renal filtration barrier (Both based on Dixon et al.) Cluster 6 associated with principal cells/glomeruli(?).
 
-``` {r}
-VlnPlot(dummy, features = c(row.names(cluster2.markers)[1], row.names(cluster2.markers)[2]))
+``` {r, deq-plots}
+
+VlnPlot(dummy, features = c("Aqp2", "Keg1"))
 
 # # you can plot raw counts as well
-# VlnPlot(dummy, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
-# 
-# FeaturePlot(dummy, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP",
-#     "CD8A"))
+VlnPlot(dummy, features = c("Kcne1", "Nphs1"), slot = "counts", log = TRUE)
+
+FeaturePlot(dummy, features = c("Aqp2", "Avpr2", "Kcne1", "Nphs1", "Lrp2", "Keg1"))
+```
+
+# Assinging cell types to clusters
+
+Will be done once accurate canonical markers are found. Example code:
+
+``` {r}
+
+# new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono",
+#     "NK", "DC", "Platelet")
+# names(new.cluster.ids) <- levels(pbmc)
+# pbmc <- RenameIdents(pbmc, new.cluster.ids)
+# DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
+
 ```
