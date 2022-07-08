@@ -2,11 +2,15 @@
 title: "Seurat Analysis on Dummy Data"
 author: "Sean Pierre"
 date: '2022-06-17'
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+  
 ---
 
-Spatial Transcriptomics Seurat analysis based on: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html
--------------
+**Spatial Transcriptomics Seurat analysis based on: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -15,14 +19,30 @@ library(Seurat)
 library(patchwork)
 ```
 
-Loading in the data and creating a Seurat Object
+# Loading in the data 
+Creating a Seurat Object:
 
 ``` {r}
-dummy.data <- Read10X(data.dir = "~/Desktop/test/week/outs/filtered_feature_bc_matrix")
+dummy2.data <- Read10X(data.dir = "~/Desktop/test/week/outs/filtered_feature_bc_matrix")
 
-dummy <- CreateSeuratObject(counts = dummy.data, project = "dummyKid", min.cells = 3, min.features = 200)
-dummy
+dummy2 <- CreateSeuratObject(counts = dummy2.data, project = "6WeekKidney", min.cells = 3, min.features = 200)
+dummy2
 ```
+## Merging Two Data Objects
+Can be used to easily compare male and female, dehydrated vs hydrated, etc...
+
+``` {r, unused_example}
+dummy.data <- Read10X(data.dir= "~/Desktop/test/sham/outs/filtered_feature_bc_matrix")
+dummy <- CreateSeuratObject(counts = dummy.data, project = "ShamKidney", min.cells = 3, min.features = 200)
+dummy
+
+dummy.combined <- merge(dummy, y = dummy2, add.cell.ids = c("6week", "sham"), project = "Comparison")
+dummy.combined
+ 
+```
+
+
+# Pre-Processing and Normalization
 
 In online example, filtering was done on cells with >5% mitochondrial counts, however in test data, Kidneys have been damaged which would lead to increased mitochondrial expression; Different metrics needed?
 
@@ -44,7 +64,7 @@ Filtering cells with over 6000/under 500 features or >50% mitochondrial DNA?
 Normalizing data by default: normalization.method = "LogNormalize", scale.factor = 10000
 
 ``` {r, warning = FALSE}
-dummy <- subset(dummy, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & percent.mt < 5)
+dummy <- subset(dummy, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & percent.mt < 25)
 dummy <- NormalizeData(dummy)
 
 dummy <- FindVariableFeatures(dummy, selection.method = "vst", nfeatures = 2000)
@@ -56,6 +76,8 @@ plot1
 plot2
 ```
 
+# Feature Selection and Scaling
+
 Linear transformation or scaling, standard for dimensionality reduction so that highly expressed genes don't dominate downstream analysis.
 
 Run PCA on the scaled data based on previously determined variable features. What are the possible variable features?
@@ -64,7 +86,7 @@ in DimHeatMap(), cells and features are ordered according to PCA scores.
 
 ```{r, warning = FALSE}
 all.genes <- rownames(dummy)
-#length(all.genes)  -- 16842
+#length(all.genes)
 
 dummy <- ScaleData(dummy, features = all.genes)
 
@@ -78,9 +100,11 @@ DimHeatmap(dummy, dims = 1:15, cells = 500, balanced = TRUE)
 
 ```
 
+# Clustering
+
 To Determine how many PCs to include and which are significant, perform a resampling test (JackStraw Procedure). Process can take a long time, More approximate technique ElbowPlot() used to save time.
 
-Significant PCs are those with low p-value features. Drop off can be seen after PC 8. Elbow in plot ranks where majority of true signal is captured based on location of elbow bend. Recommended to err on the higher side when choosing the parameter. Too little PCs significantly/adveresly alters data.
+Significant PCs are those with low p-value features. Drop off can be seen after PC 8. Elbow in plot ranks where majority of true signal is captured based on location of elbow bend. Recommended to err on the higher side when choosing the parameter. Too little PCs significantly/adversely alters data.
 
 ```{r, dimensionality, warning = FALSE}
 dummy <- JackStraw(dummy, num.replicate = 100)
@@ -89,11 +113,11 @@ dummy <-  ScoreJackStraw(dummy, dims = 1:15)
 JackStrawPlot(dummy, dims = 1:15)
 ElbowPlot(dummy)
 ```
-Clustering based on K-nearest neighbor and optimization using Louvain algorithm. Increasing resolution increases the number of clusters, where more are needed with larger datasets.
+Clustering based on K-nearest neighbor and optimization using Louvain algorithm. Increasing resolution increases the number of clusters, where more resolution is needed with larger datasets.
 
 ``` {r, clustering}
 dummy <- FindNeighbors(dummy, dims = 1:8)
-dummy <-  FindClusters(dummy, resolution = 0.5)
+dummy <-  FindClusters(dummy, resolution = 0.6)
 
 # Look at cluster IDs of the first 5 cells
 head(Idents(dummy), 5)
