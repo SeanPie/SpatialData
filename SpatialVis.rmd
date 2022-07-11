@@ -3,9 +3,12 @@ title: "Spatial Experiment"
 output:
   html_document:
     df_print: paged
+    toc: true
+    toc_float: true
+    toc_depth: 2
 ---
 
-Spatial Transcriptomics analysis based on https://lmweber.org/OSTA-book/analysis-steps.html 
+**Spatial Transcriptomics analysis based on https://lmweber.org/OSTA-book/analysis-steps.html**
 
 For both practice data from github and from mice kidney paper
 
@@ -17,94 +20,103 @@ library(scater)
 library(scran)
 library(pheatmap)
 
-#load object from sample data
-# spe <- Visium_humanDLPFC()
-# imgData(spe)
 ```
 
 
-Load the data and create a Spatial Experiment object
+# Load the data
+
+Create a Spatial Experiment object.
 ```{r, message=FALSE}
 
 dir <- file.path("~","Desktop","test")
 
-sample1 <-  file.path(dir, "week", "outs")
+sample1 <-  file.path(dir, "sham", "outs")
 
-spe1 <- read10xVisium(sample1,
+shamKidney <- read10xVisium(sample1,
                         type = "sparse", data = "filtered",
                         images = "lowres", load = FALSE)
 
+```
 
-# sample_ids2 <- c("2day", '12hour')
-# samples2 <- file.path(dir, sample_ids2, "outs")
-# 
-# samples_idsAll <- c('2day', '12hour', 'week', 'sham')
-# samplesAll <-  file.path(dir, samples_idsAll, 'outs')
-# 
-# #Import visium data for mutiple samples
-# spe2 <- read10xVisium(samples2, sample_ids2,
-#                         type = "sparse", data = "filtered",
-#                         images = "lowres", load = FALSE)
-# 
-# speAll <- read10xVisium(samplesAll, samples_idsAll,
-#                         type = "sparse", data = "filtered",
-#                         images = "lowres", load = FALSE)
+Spatial Experiment objects can created with merged data from multiple tissue samples.
+``` {r, message=FALSE}
+sample_ids2 <- c("2day", '12hour')
+samples2 <- file.path(dir, sample_ids2, "outs")
+
+samples_idsAll <- c('2day', '12hour', 'week', 'sham')
+samplesAll <-  file.path(dir, samples_idsAll, 'outs')
+
+#Import visium data for mutiple samples
+sham_6weekKidney <- read10xVisium(samples2, sample_ids2,
+                        type = "sparse", data = "filtered",
+                        images = "lowres", load = FALSE)
+
+allKidneys <- read10xVisium(samplesAll, samples_idsAll,
+                        type = "sparse", data = "filtered",
+                        images = "lowres", load = FALSE)
 
 ```
 
+# Pre-Processing
 
-```{r}
-
-plotSpots(spe1)
-# plotSpots(spe2)
-# plotSpots(speAll)
-# plotVisium(speAll)
-plotVisium(spe1)
+```{r, figures-side, fig.show="hold", out.width="50%"}
+plotSpots(shamKidney)
+plotSpots(sham_6weekKidney)
+plotSpots(allKidneys)
+plotVisium(allKidneys)
+plotVisium(shamKidney)
 ```
 
+# Filtering and Normalization
+
 ```{r}
+# add some values in 'colData' to annotate spots, also done by addPerCellQC function
+# colData(shamKidney)$sum <- colSums(counts(shamKidney))
 
-# colData(spe)$sum <- colSums(counts(spe)) # add some values in 'colData' to annotate spots, also done by addPerCellQC function
-# 
-# # spe1 <- spe1[, colData(spe1)$in_tissue == TRUE] #All spots already in tissue because using filtered data
-# 
-# #rowData(spe1)$symbol #Get a list of gene names using rowData, symbol columns is the names
-# 
-# 
+#All spots already in tissue because using filtered data
+shamKidney <- shamKidney[, colData(shamKidney)$in_tissue == TRUE]
 
-is_mito <- grepl("(^MT-)|(^mt-)", rowData(spe1)$symbol) #Used to look for specific genes, in examples searches for mitochondrial genes
+#Get a list of gene names using rowData, symbol columns is the names
+head(rowData(shamKidney)$symbol)
+
+#Used to look for specific genes, in this example searches for mitochondrial genes
+is_mito <- grepl("(^MT-)|(^mt-)", rowData(shamKidney)$symbol) 
 
 table(is_mito)
-rowData(spe1)$symbol[is_mito]
+rowData(shamKidney)$symbol[is_mito]
 
-spe1 <- addPerCellQC(spe1, subsets = list(mito = is_mito))
-head(colData(spe1))
+shamKidney <- addPerCellQC(shamKidney, subsets = list(mito = is_mito))
+head(colData(shamKidney))
 
-# plotVisium(spe1, fill = "sum", trans = "log", highlight = "in_tissue")
-
+plotVisium(shamKidney, fill = "sum", trans = "log", highlight = "in_tissue")
 
 ```
+
 Thresholds can be used as QC to remove spots that don't meet metrics. Includes among others:
+
 1. Library size
-2. # of expressed genes
+
+2. Expressed genes
+
 3. Proportion of gene specific reads (mitochondrial in this example)
-4. # of cells per spot (If available for dataset)
+
+4. Cells per spot (If available for dataset)
 
 ```{r}
-hist(colData(spe1)$sum, breaks = 20) # Library Size, total sum of UMI counts per spot (included in sum column)
+hist(colData(shamKidney)$sum, breaks = 20) # Library Size, total sum of UMI counts per spot (included in sum column)
 
-hist(colData(spe1)$detected, breaks = 20) # Number of expressed genes per spot (detected column)
+hist(colData(shamKidney)$detected, breaks = 20) # Number of expressed genes per spot (detected column)
 
-hist(colData(spe1)$subsets_mito_percent, breaks = 20) # Proportion of mitochondrial genes per spot
+hist(colData(shamKidney)$subsets_mito_percent, breaks = 20) # Proportion of mitochondrial genes per spot
 
 # select QC threshold for library size
-qc_lib_size <- colData(spe1)$sum < 5000
+qc_lib_size <- colData(shamKidney)$sum < 5000
 table(qc_lib_size)
 
-colData(spe1)$qc_lib_size <- qc_lib_size
+colData(shamKidney)$qc_lib_size <- qc_lib_size
 
 # check spatial pattern of discarded spots
-plotQC(spe1, type = "spots", 
+plotQC(shamKidney, type = "spots", 
        discard = "qc_lib_size")
 
 # # combined set of discarded spots
@@ -118,28 +130,29 @@ plotQC(spe1, type = "spots",
 Log based normalization can be performed to scale data approximately and create clusters.
 Is this necessary for filtered data?
 
+# Clustering and Visualization
 
 ``` {r}
 set.seed(123) #quick clustering for pool-based size factors
-qclus <- quickCluster(spe1)
+qclus <- quickCluster(shamKidney)
 # table(qclus)
 
-spe1 <- computeSumFactors(spe1, cluster = qclus)
-summary(sizeFactors(spe1))
-hist(sizeFactors(spe1), breaks = 20)
+shamKidney <- computeSumFactors(shamKidney, cluster = qclus)
+summary(sizeFactors(shamKidney))
+hist(sizeFactors(shamKidney), breaks = 20)
 
-spe1 <-  logNormCounts(spe1)
-assayNames(spe1)
+shamKidney <-  logNormCounts(shamKidney)
+assayNames(shamKidney)
 ```
 Feature selection based on highly variable genes (HVG) and spatially variable genes (SVG).
 Should mitochondrial genes be removed? Are they are likely highly expressed and/or are they of biological interest?
 SVG selection based on SPARK-X package, HVG based on scran package
 
 ``` {r}
-# spe1 <- spe1[!is_mito, ]
-# dim(spe1)
+# shamKidney <- shamKidney[!is_mito, ]
+# dim(shamKidney)
 
-deCells <-  modelGeneVar(spe1)
+deCells <-  modelGeneVar(shamKidney)
 
 fit <-  metadata(deCells)
 plot(fit$mean, fit$var, 
@@ -157,49 +170,50 @@ How do PCA/UMAP plots compare to the plots prpduced by loupe browser for 6week s
 
 ```{r}
 set.seed(123)
-spe1 <- runPCA(spe1, subset_row = top_hvgs)
-spe1 <- runUMAP(spe1, dimred = "PCA")
+shamKidney <- runPCA(shamKidney, subset_row = top_hvgs)
+shamKidney <- runUMAP(shamKidney, dimred = "PCA")
 
 # dim(reducedDim(spe, "PCA"))
 
-colnames(reducedDim(spe1, "UMAP")) <- paste0("UMAP", 1:2)
+colnames(reducedDim(shamKidney, "UMAP")) <- paste0("UMAP", 1:2)
 
-plotDimRed(spe1, type = "PCA")
-plotDimRed(spe1, type = "UMAP")
+plotDimRed(shamKidney, type = "PCA")
+plotDimRed(shamKidney, type = "UMAP")
 
 ```
 
 Produces clusters of HVGs using graph-based clustering based on the Walktrap method. Applies to top 50 PCs? (Meaning?)
 
 Change K values to get number of clusters less than 8. Are less clusters better or are more clusters more accurate?
+
 ```{r}
 set.seed(123)
-k = 23
-g <- buildSNNGraph(spe1, k = k, use.dimred = "PCA") #Graph based clustering
+k = 20
+g <- buildSNNGraph(shamKidney, k = k, use.dimred = "PCA") #Graph based clustering
 g_walk <- igraph::cluster_walktrap(g)
 clus <- g_walk$membership
 table(clus)
 
-colLabels(spe1) <- factor(clus) #Store cluster labels in column 'label' in colData
+colLabels(shamKidney) <- factor(clus) #Store cluster labels in column 'label' in colData
 
-plotSpots(spe1, annotate = "label",
-          palette = "libd_layer_colors")
+plotSpots(shamKidney, annotate = "label",
+          palette = rainbow(10))
 
-plotVisium(spe1, fill = "label", trans = "log", highlight = "in_tissue")
+plotVisium(shamKidney, fill = "label", trans = "log", highlight = "in_tissue", palette = rainbow(10))
 
-plotDimRed(spe1, type = "PCA",
-           annotate = "label", palette = "libd_layer_colors")
+plotDimRed(shamKidney, type = "PCA",
+           annotate = "label", palette = rainbow(10))
 
-plotDimRed(spe1, type = "UMAP",
-           annotate = "label", palette = "libd_layer_colors")
+plotDimRed(shamKidney, type = "UMAP",
+           annotate = "label", palette = rainbow(10))
 ```
 
 Code to identify marker genes, can also be done using Seurat
 
 ``` {r}
-rownames(spe1) <- rowData(spe1)$symbol
+rownames(shamKidney) <- rowData(shamKidney)$symbol
 
-markers <- findMarkers(spe1, test = 'binom', direction = 'up') #Produces list of clusters equal to clusters from graph based
+markers <- findMarkers(shamKidney, test = 'binom', direction = 'up') #Produces list of clusters equal to clusters from graph based
 markers
 
 interesting <- markers[[6]] #selection for which cluster
@@ -209,7 +223,7 @@ logFCs <- getMarkerEffects(best_set)
 pheatmap(logFCs, breaks = seq(-5, 5, length.out = 101))
 
 top_genes <- head(rownames(interesting))
-plotExpression(spe1, x = "label", features = top_genes)
+plotExpression(shamKidney, x = "label", features = top_genes)
 
 ```
 
