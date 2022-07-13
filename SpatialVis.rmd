@@ -10,7 +10,7 @@ output:
 
 **Spatial Transcriptomics analysis based on https://lmweber.org/OSTA-book/analysis-steps.html**
 
-For both practice data from github and from mice kidney paper
+For both practice data from github and from mice kidney paper. (recommit)
 
 ```{r, include=FALSE} 
 library(SpatialExperiment)
