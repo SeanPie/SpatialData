@@ -19,6 +19,8 @@ library(Seurat)
 library(patchwork)
 ```
 
+# [Spatial Experiment Object](SpatialVis.html)
+
 # Loading in the data 
 Creating a Seurat Object:
 

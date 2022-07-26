@@ -10,7 +10,7 @@ output:
 
 **Spatial Transcriptomics analysis based on https://lmweber.org/OSTA-book/analysis-steps.html**
 
-For both practice data from github and from mice kidney paper. (recommit)
+For both practice data from github and from mice kidney paper.
 
 ```{r, include=FALSE} 
 library(SpatialExperiment)
@@ -19,9 +19,11 @@ library(ggspavis)
 library(scater)
 library(scran)
 library(pheatmap)
+library(dplyr)
 
 ```
 
+# [Spatial Experiment Object Notes](SpatialVis.html)
 
 # Load the data
 
@@ -70,7 +72,7 @@ plotVisium(shamKidney)
 # Filtering and Normalization
 
 ```{r}
-# add some values in 'colData' to annotate spots, also done by addPerCellQC function
+# add some values in 'colData' to annotate spots, also done by addPerCellQC function, 
 # colData(shamKidney)$sum <- colSums(counts(shamKidney))
 
 #All spots already in tissue because using filtered data
@@ -85,14 +87,14 @@ is_mito <- grepl("(^MT-)|(^mt-)", rowData(shamKidney)$symbol)
 table(is_mito)
 rowData(shamKidney)$symbol[is_mito]
 
-shamKidney <- addPerCellQC(shamKidney, subsets = list(mito = is_mito))
+shamKidney <- addPerCellQC(shamKidney, subsets = list(mito=is_mito))
 head(colData(shamKidney))
 
 plotVisium(shamKidney, fill = "sum", trans = "log", highlight = "in_tissue")
 
 ```
 
-Thresholds can be used as QC to remove spots that don't meet metrics. Includes among others:
+Thresholds can be used as QC to remove spots that don't meet metrics. Including but not limited to:
 
 1. Library size
 
@@ -102,6 +104,8 @@ Thresholds can be used as QC to remove spots that don't meet metrics. Includes a
 
 4. Cells per spot (If available for dataset)
 
+Appears to be a spike at low library sizes? An increased number of spots with low number of transcripts around 1000 which can be filtered out. Need to doublecheck the difference between UMIs and expressed genes. 
+
 ```{r}
 hist(colData(shamKidney)$sum, breaks = 20) # Library Size, total sum of UMI counts per spot (included in sum column)
 
@@ -110,7 +114,7 @@ hist(colData(shamKidney)$detected, breaks = 20) # Number of expressed genes per 
 hist(colData(shamKidney)$subsets_mito_percent, breaks = 20) # Proportion of mitochondrial genes per spot
 
 # select QC threshold for library size
-qc_lib_size <- colData(shamKidney)$sum < 5000
+qc_lib_size <- colData(shamKidney)$sum < 1500
 table(qc_lib_size)
 
 colData(shamKidney)$qc_lib_size <- qc_lib_size
@@ -118,17 +122,20 @@ colData(shamKidney)$qc_lib_size <- qc_lib_size
 # check spatial pattern of discarded spots
 plotQC(shamKidney, type = "spots", 
        discard = "qc_lib_size")
+```
 
-# # combined set of discarded spots
-# discard <- qc_lib_size | qc_detected | qc_mito | qc_cell_count
-# colData(spe)$discard <- discard
+Remove and filter any low quality spots. Only based on UMIs 
 
-# # filter low-quality spots
-# spe <- spe[, !colData(spe)$discard]
+```{r}
+# combined set of discarded spots
+discard <- qc_lib_size
+colData(shamKidney)$discard <- discard
+
+# filter low-quality spots
+shamKidney <- shamKidney[, !colData(shamKidney)$discard]
 
 ```
 Log based normalization can be performed to scale data approximately and create clusters.
-Is this necessary for filtered data?
 
 # Clustering and Visualization
 
@@ -148,24 +155,42 @@ Feature selection based on highly variable genes (HVG) and spatially variable ge
 Should mitochondrial genes be removed? Are they are likely highly expressed and/or are they of biological interest?
 SVG selection based on SPARK-X package, HVG based on scran package
 
-``` {r}
+``` {r, getHVGs}
 # shamKidney <- shamKidney[!is_mito, ]
 # dim(shamKidney)
 
 deCells <-  modelGeneVar(shamKidney)
 
 fit <-  metadata(deCells)
+
 plot(fit$mean, fit$var, 
      xlab = "mean of log-expression", ylab = "variance of log-expression")
 curve(fit$trend(x), col = "dodgerblue", add = TRUE, lwd = 2)
 
 top_hvgs <- getTopHVGs(deCells, prop = 0.1) #prop defines how many HVGS are wanted, 0.1 returns top 10% of genes
 length(top_hvgs)
+```
+plot shows the total UMIs expressed in spots with differentially expressed cells. This is the absolute numver of observed transcripts per spot in spots expressing genes in the HVG list. (Based on 10x definition of UMI, needs to be doublechecked)
+
+Integration of highly variable genes and spatially variable genes can be combines to further identify biologically relevant information not cpatured by HVGs alone. Example in Li et al. 2021 combines principal components of based on HVGs and SVGs in downstreams analysis. 
+
+```{r, visualizeHVGs}
+#Delete columns added in first addPerCellQC function to prevent duplicate columns
+shamKidney$sum <- shamKidney$detected <- shamKidney$total <-  NULL
+
+#careful running multiple times, adds duplicate columns and breaks code.
+shamKidney <- addPerCellQC(shamKidney, subsets = list(hvg = top_hvgs))
+# head(colData(shamKidney))
+
+plotSpots(shamKidney, annotate = "subsets_hvg_sum", palette = c("whitesmoke", "red4"))
+
 
 ```
+
 PCA and UMAP can be easily produced.
+
 How do PCA/UMAP plots compare to the plots prpduced by loupe browser for 6week sample?
-  They are different but I think different because they have 8 clusters, Compared to my 6. 
+They are different maybe because the number of clusters differ. Should they all be the same? How do they differ compared to seurat clustering?
 
 
 ```{r}
@@ -182,9 +207,9 @@ plotDimRed(shamKidney, type = "UMAP")
 
 ```
 
-Produces clusters of HVGs using graph-based clustering based on the Walktrap method. Applies to top 50 PCs? (Meaning?)
+Produces clusters of HVGs using graph-based clustering based on the Walktrap method. Applies to top 50 PCs?
 
-Change K values to get number of clusters less than 8. Are less clusters better or are more clusters more accurate?
+Change K values to change the number of clusters. Are less clusters better or are more clusters better for analysis?
 
 ```{r}
 set.seed(123)
@@ -197,18 +222,18 @@ table(clus)
 colLabels(shamKidney) <- factor(clus) #Store cluster labels in column 'label' in colData
 
 plotSpots(shamKidney, annotate = "label",
-          palette = rainbow(10))
+          palette = rainbow(8))
 
-plotVisium(shamKidney, fill = "label", trans = "log", highlight = "in_tissue", palette = rainbow(10))
+plotVisium(shamKidney, fill = "label", trans = "log", highlight = "in_tissue", palette = rainbow(8))
 
 plotDimRed(shamKidney, type = "PCA",
-           annotate = "label", palette = rainbow(10))
+           annotate = "label", palette = rainbow(8))
 
 plotDimRed(shamKidney, type = "UMAP",
-           annotate = "label", palette = rainbow(10))
+           annotate = "label", palette = rainbow(8))
 ```
 
-Code to identify marker genes, can also be done using Seurat
+Code to identify potential marker genes, can also be done using Seurat
 
 ``` {r}
 rownames(shamKidney) <- rowData(shamKidney)$symbol
@@ -216,7 +241,7 @@ rownames(shamKidney) <- rowData(shamKidney)$symbol
 markers <- findMarkers(shamKidney, test = 'binom', direction = 'up') #Produces list of clusters equal to clusters from graph based
 markers
 
-interesting <- markers[[6]] #selection for which cluster
+interesting <- markers[[4]] #selection for which cluster
 best_set <- interesting[interesting$Top <= 5, ]
 logFCs <- getMarkerEffects(best_set)
 
